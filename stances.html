@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Karate Dojo Trainer</title>
+    <style>
+	@media (max-width: 600px) {
+
+    h1 {
+        font-size: 18px;
+        letter-spacing: 4px;
+    }
+
+    .card {
+        width: 95%;
+        padding: 20px;
+    }
+
+    input {
+        width: 95%;
+        font-size: 14px;
+    }
+
+    button {
+        width: 95%;
+        font-size: 16px;
+    }
+
+    .mic-help video {
+        width: 80px;
+    }
+
+    .mic-text {
+        font-size: 10px;
+        max-width: 100px;
+    }
+}
+
+	.mic-help {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    text-align: left;
+}
+
+.mic-help video {
+    width: 220px;
+    border-radius: 8px;
+    border: 2px solid white;
+}
+
+.mic-text {
+    color: white;
+    font-size: 12px;
+    margin-top: 5px;
+    max-width: 140px;
+}
+
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+			background: linear-gradient(135deg, #004d26, #008040);
+            color: white;
+            text-align: center;
+        }
+
+        h1 {
+            background: #000000;
+            padding: 20px;
+            margin: 0;
+            letter-spacing: 10px;
+        }
+
+        .container {
+            margin-top: 40px;
+        }
+
+        .card {
+            background: #111;
+            border: 3px solid #ffffff;
+            border-radius: 15px;
+            padding: 40px;
+            display: inline-block;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        #question {
+            font-size: 28px;
+            margin: 20px 0;
+        }
+
+        input {
+            padding: 10px;
+            width: 80%;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #046307;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        #popup {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        #score {
+            margin-top: 15px;
+            font-size: 18px;
+        }
+		@media (max-width: 768px) {
+    .mic-help {
+        display: none;
+    }
+}
+
+    </style>
+</head>
+<body>
+<div class="mic-help">
+    <video autoplay loop muted playsinline>
+        <source src="{{ url_for('static', filename='mic_help.mp4') }}" type="video/mp4">
+    </video>
+    <div class="mic-text">
+        To turn off your mic and audio, disable microphone access in your browser settings.
+    </div>
+</div>
+
+
+
+<h1>  Karate Dojo Trainer</h1>
+<h2>By: Arav Kochrekar</h2>
+<a href="/">
+    <button class="back-button">← Back to Home</button>
+</a>
+
+
+<div class="container">
+    <div class="card">
+        <div id="question">Press Start</div>
+
+        <input type="text" id="textAnswer" placeholder="Type your answer here">
+
+        <br>
+        <button onclick="submitText()">Submit</button>
+        <button onclick="getQuestion()">Start / Next</button>
+
+        <div id="popup"></div>
+        <div id="score"></div>
+    </div>
+</div>
+
+<script>
+let recognition;
+let listening = false;
+
+function speak(text) {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "en-US";
+    speechSynthesis.speak(utter);
+}
+
+
+function getQuestion() {
+    fetch("/get_question")
+    .then(res => res.json())
+    .then(data => {
+        if (data.finished) {
+            document.getElementById("question").innerText =
+                "Finished! Final Score: " + data.score;
+            return;
+        }
+
+        document.getElementById("question").innerText =
+            "Translate: " + data.japanese;
+
+        document.getElementById("popup").innerText = "";
+        document.getElementById("textAnswer").value = "";
+
+        speak(data.japanese);
+    });
+}
+
+function checkAnswer(answer) {
+    fetch("/check_answer/" + answer)
+    .then(res => res.json())
+    .then(data => {
+        if (data.correct) {
+            document.getElementById("popup").innerText = "CORRECT";
+            speak("correct")
+            document.getElementById("popup").style.color = "lime";
+            getQuestion();  // auto next
+        } else {
+            document.getElementById("popup").innerText = "INCORRECT";
+            document.getElementById("popup").style.color = "red";
+        }
+
+        document.getElementById("score").innerText =
+            "Score: " + data.score;
+    });
+}
+
+function submitText() {
+    const answer = document.getElementById("textAnswer").value;
+    if (answer.trim() !== "") {
+        checkAnswer(answer);
+    }
+}
+
+function startListening() {
+    recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+
+    recognition.onresult = function(event) {
+        const speech = event.results[event.results.length - 1][0].transcript;
+        checkAnswer(speech);
+    };
+
+    recognition.onend = function() {
+        recognition.start();  // always restart
+    };
+
+    recognition.start();
+}
+
+document.getElementById("textAnswer").addEventListener("keypress", function(event) {
+    // If the user presses the "Enter" key
+    if (event.key === "Enter") {
+        // Prevent the default form submission (if any) and click the submit function
+        event.preventDefault();
+        submitText();
+    }
+});
+
+startListening();
+</script>
+
+</body>
+</html>
