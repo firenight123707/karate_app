@@ -68,5 +68,73 @@ def check_answer(user_answer):
         "score": session["score"]
     })
 
+@app.route("/")
+def home():
+    return render_template("home.html")
+
+
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0")
+    app.run(debug=True)
+
+
+# -----------------------
+# KICKS DATA
+# -----------------------
+
+kicks = [
+    {"japanese": "Mae geri", "english": "front snap kick"},
+    {"japanese": "Mae ken geri", "english": "front snap instep kick"},
+    {"japanese": "Mae kemoki geri", "english": "front thrust kick"},
+    {"japanese": "Mawashi geri", "english": "round kick"},
+    {"japanese": "Yoko sokuto geri", "english": "side kick (knife edge)"},
+    {"japanese": "Yoko geri", "english": "side kick (ball of foot)"},
+    {"japanese": "Yoko kekomi geri", "english": "side thrust kick"},
+    {"japanese": "Kakato geri", "english": "heel kick"},
+    {"japanese": "Ushiro geri", "english": "back kick"},
+    {"japanese": "Ushiro kekomi geri", "english": "back thrust kick"},
+    {"japanese": "Hiza geri", "english": "knee kick"},
+    {"japanese": "Mae fumi komi geri", "english": "front stomp kick"},
+    {"japanese": "Kangetsu geri", "english": "joint kick"},
+    {"japanese": "Kagi geri", "english": "hook kick"},
+    {"japanese": "Mae tobi geri", "english": "jump front kick"},
+    {"japanese": "Yoko tobi geri", "english": "jump side kick"},
+    {"japanese": "Mawashi tobi geri", "english": "jump round kick"},
+    {"japanese": "Mikazuke geri", "english": "crescent kick"},
+    {"japanese": "Gyaku mikazuke geri", "english": "reverse crescent kick"},
+]
+
+kick_index = 0
+kick_score = 0
+
+
+
+@app.route("/kicks")
+def kicks_page():
+    return render_template("kicks.html")
+
+
+@app.route("/get_kick_question")
+def get_kick_question():
+    global kick_index
+
+    if kick_index >= len(kicks):
+        return jsonify({"finished": True, "score": kick_score})
+
+    return jsonify({
+        "japanese": kicks[kick_index]["japanese"],
+        "finished": False
+    })
+
+
+@app.route("/check_kick_answer/<answer>")
+def check_kick_answer(answer):
+    global kick_index, kick_score
+
+    correct_answer = kicks[kick_index]["english"].lower()
+
+    if answer.lower().strip() == correct_answer:
+        kick_score += 1
+        kick_index += 1
+        return jsonify({"correct": True, "score": kick_score})
+    else:
+        return jsonify({"correct": False, "score": kick_score})
