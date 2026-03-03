@@ -155,6 +155,8 @@
         <br>
         <button onclick="submitText()">Submit</button>
         <button onclick="getQuestion()">Start / Next</button>
+		<button id="startBtn" style="display:none;">Start Training</button>
+
 
         <div id="popup"></div>
         <div id="score"></div>
@@ -165,11 +167,32 @@
 let recognition;
 let listening = false;
 
-function speak(text) {
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = "en-US";
-    speechSynthesis.speak(utter);
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+let audioUnlocked = !isMobile; 
+
+if (isMobile) {
+    document.getElementById("startBtn").style.display = "block";
 }
+
+document.getElementById("startBtn").addEventListener("click", function() {
+
+    audioUnlocked = true;
+
+    // unlock audio engine
+    const dummy = new Audio();
+    dummy.play().catch(() => {});
+
+    loadNextQuestion();
+});
+
+
+function speak(text) {
+    if (!audioUnlocked) return;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    speechSynthesis.speak(utterance);
+}
+
 
 
 function getQuestion() {
